@@ -1,0 +1,172 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  S3 bucket (private) serving the Shopme demo site through a CloudFront
+  distribution using Origin Access Control (OAC). Public access to the
+  bucket itself is fully blocked; content is only reachable via CloudFront.
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: >
+      Globally-unique name for the S3 bucket. Must be all lowercase, no
+      underscores.
+  IndexDocument:
+    Type: String
+    Default: index.html
+    Description: Default document served at the site root.
+  ErrorDocument:
+    Type: String
+    Default: index.html
+    Description: >
+      Document served for 403/404 errors. Shopme ships no dedicated error
+      page, so this defaults to index.html; pass a different value if you
+      add one.
+
+Resources:
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      AccessControl: Private
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+
+  CloudFrontOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub '${AWS::StackName}-oac'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  WebACL:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub '${AWS::StackName}-waf'
+      Scope: CLOUDFRONT
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub '${AWS::StackName}-waf-metric'
+      Rules:
+        - Name: AWS-AWSManagedRulesSQLiRuleSet
+          Priority: 0
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesSQLiRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: AWSManagedRulesSQLiRuleSet
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        WebACLId: !GetAtt WebACL.Arn
+        DefaultRootObject: !Ref IndexDocument
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt WebsiteBucket.RegionalDomainName
+            S3OriginConfig: {}
+            OriginAccessControlId: !GetAtt CloudFrontOAC.Id
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD]
+          CachedMethods: [GET, HEAD]
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # AWS managed "CachingOptimized"
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: !Sub '/${ErrorDocument}'
+
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipal
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: 's3:GetObject'
+            Resource: !Sub '${WebsiteBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                'AWS:SourceArn': !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution.Id}'
+  MonitoringDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub '${AWS::StackName}-dashboard'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "title": "CloudFront Requests",
+                "view": "timeSeries",
+                "region": "us-east-1",
+                "period": 300,
+                "stat": "Sum",
+                "metrics": [
+                  ["AWS/CloudFront", "Requests", "DistributionId", "${CloudFrontDistribution}", "Region", "Global"]
+                ]
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 0,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "title": "S3 Bucket Storage (size & object count)",
+                "view": "timeSeries",
+                "region": "${AWS::Region}",
+                "period": 86400,
+                "stat": "Average",
+                "metrics": [
+                  ["AWS/S3", "BucketSizeBytes", "BucketName", "${WebsiteBucket}", "StorageType", "StandardStorage"],
+                  ["AWS/S3", "NumberOfObjects", "BucketName", "${WebsiteBucket}", "StorageType", "AllStorageTypes"]
+                ]
+              }
+            }
+          ]
+        }
+
+Outputs:
+  BucketName:
+    Description: Name of the S3 bucket hosting the website
+    Value: !Ref WebsiteBucket
+  BucketArn:
+    Description: ARN of the S3 bucket
+    Value: !GetAtt WebsiteBucket.Arn
+  CloudFrontDomainName:
+    Description: CloudFront distribution domain name (the new public URL)
+    Value: !GetAtt CloudFrontDistribution.DomainName
+  DashboardURL:
+    Description: Direct link to the CloudWatch dashboard
+    Value: !Sub 'https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${MonitoringDashboard}'

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shopme — Online Shopping for Electronics, Books, Home & More</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="page-wrap">
+
+    <header class="site-header">
+      <div class="header-row top-row">
+        <a href="index.html" class="logo">shopme<span class="logo-dot">.</span></a>
+
+        <div class="deliver-to">
+          <span class="pin">📍</span>
+          <div class="deliver-text">
+            <span class="deliver-line1">Deliver to</span>
+            <span class="deliver-line2">Demo User - 10001</span>
+          </div>
+        </div>
+
+        <form class="search-bar" id="search-form" role="search">
+          <select class="search-category" id="search-category" aria-label="Search category">
+            <option value="all">All</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Computers">Computers</option>
+            <option value="Home & Kitchen">Home &amp; Kitchen</option>
+            <option value="Books">Books</option>
+            <option value="Fashion">Fashion</option>
+            <option value="Toys & Games">Toys &amp; Games</option>
+            <option value="Beauty">Beauty</option>
+            <option value="Sports & Outdoors">Sports &amp; Outdoors</option>
+          </select>
+          <input type="text" id="search-input" class="search-input" placeholder="Search Shopme" aria-label="Search Shopme" />
+          <button type="submit" class="search-btn" aria-label="Search">🔍</button>
+        </form>
+
+        <div class="header-links">
+          <div class="lang-select">🇺🇸 EN</div>
+          <a href="#" class="account-link">
+            <span class="line1">Hello, sign in</span>
+            <span class="line2">Account &amp; Lists ▾</span>
+          </a>
+          <a href="#" class="orders-link">
+            <span class="line1">Returns</span>
+            <span class="line2">&amp; Orders</span>
+          </a>
+          <a href="cart.html" class="cart-link">
+            <span class="cart-icon-wrap">🛒<span id="cart-count" class="cart-count">0</span></span>
+            <span class="cart-text">Cart</span>
+          </a>
+        </div>
+      </div>
+
+      <nav class="header-row nav-row">
+        <button class="all-menu" type="button">☰ All</button>
+        <a href="index.html?cat=Electronics">Electronics</a>
+        <a href="index.html?cat=Computers">Computers</a>
+        <a href="index.html?cat=Home%20%26%20Kitchen">Home &amp; Kitchen</a>
+        <a href="index.html?cat=Books">Books</a>
+        <a href="index.html?cat=Fashion">Fashion</a>
+        <a href="index.html?cat=Toys%20%26%20Games">Toys &amp; Games</a>
+        <a href="index.html?cat=Beauty">Beauty</a>
+        <a href="index.html?cat=Sports%20%26%20Outdoors">Sports &amp; Outdoors</a>
+        <a href="#" class="nav-deals">Today's Deals</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>Big Savings Week</h1>
+        <p>Deals across Electronics, Home, Fashion & more — all in one place.</p>
+        <button class="hero-cta" onclick="document.getElementById('home-sections').scrollIntoView({behavior:'smooth'})">Shop now</button>
+      </section>
+
+      <div class="content-wrap">
+        <div class="promo-row" id="promo-row"></div>
+
+        <section id="search-results" class="section" hidden></section>
+
+        <div id="home-sections">
+          <section class="section">
+            <div class="section-head">
+              <h2>Today's Deals</h2>
+              <a href="#" class="nav-deals-link">See all deals ›</a>
+            </div>
+            <div class="deals-strip" id="deals-strip"></div>
+          </section>
+
+          <div id="category-sections"></div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <button class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">Back to top</button>
+      <div class="footer-columns">
+        <div>
+          <h4>Get to Know Us</h4>
+          <ul>
+            <li><a href="#">About Shopme</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Press Releases</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Make Money with Us</h4>
+          <ul>
+            <li><a href="#">Sell on Shopme</a></li>
+            <li><a href="#">Become an Affiliate</a></li>
+            <li><a href="#">Advertise Your Products</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Payment Products</h4>
+          <ul>
+            <li><a href="#">Shopme Rewards Card</a></li>
+            <li><a href="#">Shop with Points</a></li>
+            <li><a href="#">Gift Cards</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Let Us Help You</h4>
+          <ul>
+            <li><a href="cart.html">Your Cart</a></li>
+            <li><a href="#">Shipping Info</a></li>
+            <li><a href="#">Help Center</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-logo">shopme.</div>
+        <p>This is a demo storefront built for practice purposes. It has no backend, processes no real orders or payments, and stores cart data only in your browser.</p>
+        <p>&copy; 2026 Shopme. All rights reserved.</p>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="js/products.js"></script>
+  <script src="js/cart-utils.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
