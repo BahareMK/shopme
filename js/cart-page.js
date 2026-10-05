@@ -7,7 +7,7 @@ function cartLineHTML(line) {
   const lineTotal = (p.price * line.qty).toFixed(2);
   return `
     <div class="cart-line" data-id="${p.id}">
-      <a href="product.html?id=${p.id}" class="cart-line-image" style="background:${p.color}">${p.emoji}</a>
+     <a href="product.html?id=${p.id}" class="cart-line-image" style="background:${p.color}"><img src="/images/${p.id}.svg" alt=""></a>
       <div class="cart-line-details">
         <h3 class="cart-line-title"><a href="product.html?id=${p.id}">${p.title}</a></h3>
         <div class="cart-line-stock">In Stock</div>

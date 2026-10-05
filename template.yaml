@@ -10,6 +10,11 @@ Parameters:
     Description: >
       Globally-unique name for the S3 bucket. Must be all lowercase, no
       underscores.
+  ImagesBucketName:
+    Type: String
+    Description: >
+      Globally-unique name for the S3 bucket that stores product images.
+      Must be all lowercase, no underscores.
   IndexDocument:
     Type: String
     Default: index.html
@@ -38,6 +43,21 @@ Resources:
         RestrictPublicBuckets: true
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
+  ImagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref ImagesBucketName
+      AccessControl: Private
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
 
   CloudFrontOAC:
     Type: AWS::CloudFront::OriginAccessControl
@@ -47,50 +67,43 @@ Resources:
         OriginAccessControlOriginType: s3
         SigningBehavior: always
         SigningProtocol: sigv4
-
-  WebACL:
-    Type: AWS::WAFv2::WebACL
+  ImagesOAC:
+    Type: AWS::CloudFront::OriginAccessControl
     Properties:
-      Name: !Sub '${AWS::StackName}-waf'
-      Scope: CLOUDFRONT
-      DefaultAction:
-        Allow: {}
-      VisibilityConfig:
-        SampledRequestsEnabled: true
-        CloudWatchMetricsEnabled: true
-        MetricName: !Sub '${AWS::StackName}-waf-metric'
-      Rules:
-        - Name: AWS-AWSManagedRulesSQLiRuleSet
-          Priority: 0
-          OverrideAction:
-            None: {}
-          Statement:
-            ManagedRuleGroupStatement:
-              VendorName: AWS
-              Name: AWSManagedRulesSQLiRuleSet
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: AWSManagedRulesSQLiRuleSet
+      OriginAccessControlConfig:
+        Name: !Sub '${AWS::StackName}-images-oac'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
 
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
         Enabled: true
-        WebACLId: !GetAtt WebACL.Arn
         DefaultRootObject: !Ref IndexDocument
         Origins:
           - Id: S3Origin
             DomainName: !GetAtt WebsiteBucket.RegionalDomainName
             S3OriginConfig: {}
             OriginAccessControlId: !GetAtt CloudFrontOAC.Id
+          - Id: ImagesOrigin
+            DomainName: !GetAtt ImagesBucket.RegionalDomainName
+            S3OriginConfig: {}
+            OriginAccessControlId: !GetAtt ImagesOAC.Id
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
           ViewerProtocolPolicy: redirect-to-https
           AllowedMethods: [GET, HEAD]
           CachedMethods: [GET, HEAD]
           CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # AWS managed "CachingOptimized"
+        CacheBehaviors:
+          - PathPattern: /images/*
+            TargetOriginId: ImagesOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD]
+            CachedMethods: [GET, HEAD]
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
         CustomErrorResponses:
           - ErrorCode: 404
             ResponseCode: 200
@@ -109,6 +122,22 @@ Resources:
               Service: cloudfront.amazonaws.com
             Action: 's3:GetObject'
             Resource: !Sub '${WebsiteBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                'AWS:SourceArn': !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution.Id}'
+  ImagesBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ImagesBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipal
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: 's3:GetObject'
+            Resource: !Sub '${ImagesBucket.Arn}/*'
             Condition:
               StringEquals:
                 'AWS:SourceArn': !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution.Id}'
@@ -170,3 +199,6 @@ Outputs:
   DashboardURL:
     Description: Direct link to the CloudWatch dashboard
     Value: !Sub 'https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${MonitoringDashboard}'
+  ImagesBucketName:
+    Description: Name of the S3 bucket that stores product images
+    Value: !Ref ImagesBucket

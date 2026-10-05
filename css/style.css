@@ -703,3 +703,11 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; 
   .account-link .line1 { display: none; }
   .cart-text { display: none; }
 }
+.promo-tile img,
+.detail-image img,
+.cart-line-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: inherit;
+}

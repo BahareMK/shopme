@@ -26,7 +26,11 @@ jobs:
             --exclude "README.md" \
             --exclude ".git/*" \
             --exclude ".github/*" \
+            --exclude "images/*" \
             --delete
+      - name: Sync product images to images bucket
+        run: |
+          aws s3 sync images/ s3://bahare-shopme-images-001/images/
 
       - name: Invalidate CloudFront cache
         run: |

@@ -13,7 +13,7 @@ function renderPromoRow() {
         <div class="promo-card">
           <h2>${cat}</h2>
           <div class="promo-grid">
-            ${items.map((p) => `<a href="product.html?id=${p.id}" class="promo-tile" style="background:${p.color}">${p.emoji}</a>`).join("")}
+            ${items.map((p) => `<a href="product.html?id=${p.id}" class="promo-tile" style="background:${p.color}"><img src="/images/${p.id}.svg" alt=""></a>`).join("")}
           </div>
           <a class="promo-link" href="index.html?cat=${encodeURIComponent(cat)}">Shop ${cat}</a>
         </div>

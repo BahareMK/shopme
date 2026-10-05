@@ -31,7 +31,7 @@ function renderProductPage() {
 
   root.innerHTML = `
     <div class="detail-image-box">
-      <div class="detail-image" style="background:${product.color}">${product.emoji}</div>
+     <div class="detail-image" style="background:${product.color}"><img src="/images/${product.id}.svg" alt=""></div>
     </div>
 
     <div class="detail-info">
