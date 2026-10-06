@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Disaster-recovery destination buckets for the Shopme site. Deploy this
+  stack in the secondary region (us-west-2). Versioning must be enabled on
+  destination buckets for S3 replication to work.
+
+Parameters:
+  WebsiteDrBucketName:
+    Type: String
+    Description: Globally-unique name for the website backup bucket.
+  ImagesDrBucketName:
+    Type: String
+    Description: Globally-unique name for the images backup bucket.
+
+Resources:
+  WebsiteDrBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref WebsiteDrBucketName
+      VersioningConfiguration:
+        Status: Enabled
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+
+  ImagesDrBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref ImagesDrBucketName
+      VersioningConfiguration:
+        Status: Enabled
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+
+Outputs:
+  WebsiteDrBucketName:
+    Description: Name of the website backup bucket
+    Value: !Ref WebsiteDrBucket
+  ImagesDrBucketName:
+    Description: Name of the images backup bucket
+    Value: !Ref ImagesDrBucket

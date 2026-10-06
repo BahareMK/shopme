@@ -15,6 +15,12 @@ Parameters:
     Description: >
       Globally-unique name for the S3 bucket that stores product images.
       Must be all lowercase, no underscores.
+  WebsiteDrBucketName:
+    Type: String
+    Description: Name of the website backup bucket in the DR region.
+  ImagesDrBucketName:
+    Type: String
+    Description: Name of the images backup bucket in the DR region.
   IndexDocument:
     Type: String
     Default: index.html
@@ -34,6 +40,20 @@ Resources:
       BucketName: !Ref BucketName
       AccelerateConfiguration:
         AccelerationStatus: Enabled
+      VersioningConfiguration:
+        Status: Enabled
+      ReplicationConfiguration:
+        Role: !GetAtt ReplicationRole.Arn
+        Rules:
+          - Id: ReplicateAllToDrRegion
+            Status: Enabled
+            Priority: 1
+            Filter:
+              Prefix: ''
+            DeleteMarkerReplication:
+              Status: Disabled
+            Destination:
+              Bucket: !Sub 'arn:aws:s3:::${WebsiteDrBucketName}'
       AccessControl: Private
       OwnershipControls:
         Rules:
@@ -60,6 +80,20 @@ Resources:
                 TransitionInDays: 60
               - StorageClass: GLACIER_IR
                 TransitionInDays: 180
+      VersioningConfiguration:
+        Status: Enabled
+      ReplicationConfiguration:
+        Role: !GetAtt ReplicationRole.Arn
+        Rules:
+          - Id: ReplicateAllToDrRegion
+            Status: Enabled
+            Priority: 1
+            Filter:
+              Prefix: ''
+            DeleteMarkerReplication:
+              Status: Disabled
+            Destination:
+              Bucket: !Sub 'arn:aws:s3:::${ImagesDrBucketName}'
       AccessControl: Private
       OwnershipControls:
         Rules:
@@ -71,6 +105,44 @@ Resources:
         RestrictPublicBuckets: true
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
+  ReplicationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3ReplicationPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetReplicationConfiguration
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:aws:s3:::${BucketName}'
+                  - !Sub 'arn:aws:s3:::${ImagesBucketName}'
+              - Effect: Allow
+                Action:
+                  - s3:GetObjectVersionForReplication
+                  - s3:GetObjectVersionAcl
+                  - s3:GetObjectVersionTagging
+                Resource:
+                  - !Sub 'arn:aws:s3:::${BucketName}/*'
+                  - !Sub 'arn:aws:s3:::${ImagesBucketName}/*'
+              - Effect: Allow
+                Action:
+                  - s3:ReplicateObject
+                  - s3:ReplicateDelete
+                  - s3:ReplicateTags
+                Resource:
+                  - !Sub 'arn:aws:s3:::${WebsiteDrBucketName}/*'
+                  - !Sub 'arn:aws:s3:::${ImagesDrBucketName}/*'
 
   CloudFrontOAC:
     Type: AWS::CloudFront::OriginAccessControl

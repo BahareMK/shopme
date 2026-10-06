@@ -27,6 +27,8 @@ jobs:
             --exclude ".git/*" \
             --exclude ".github/*" \
             --exclude "images/*" \
+            --exclude "template-dr.yaml" \
+            --exclude ".gitignore" \
             --delete
       - name: Sync product images to images bucket
         run: |
