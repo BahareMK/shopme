@@ -51,6 +51,15 @@ Resources:
       BucketName: !Ref ImagesBucketName
       AccelerateConfiguration:
         AccelerationStatus: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: ArchiveOldImages
+            Status: Enabled
+            Transitions:
+              - StorageClass: STANDARD_IA
+                TransitionInDays: 60
+              - StorageClass: GLACIER_IR
+                TransitionInDays: 180
       AccessControl: Private
       OwnershipControls:
         Rules:
